@@ -1,0 +1,22 @@
+# YuVibeStick 實體按鍵 HID 紀錄（2026-10-13 22:27，probe/hid_listen.swift）
+# 使用者操作順序：L0 四顆由上到下 → 側邊按鈕 → 背面切到 L1 → L1 四顆由上到下 → 側邊按鈕
+# 已濾掉 macOS 陣列元素的簿記事件（usage 0xFFFFFFFF、usage 0x01 value 0）
+
+輸入監控權限：已允許
+符合的裝置數：1；開始監聽 900 秒
+晚上10:27:11 page 0x07 usage 0x28 value 1
+晚上10:27:11 page 0x07 usage 0x28 value 0
+晚上10:27:12 page 0x07 usage 0x29 value 1
+晚上10:27:13 page 0x07 usage 0x29 value 0
+晚上10:27:14 page 0x07 usage 0x2B value 1
+晚上10:27:14 page 0x07 usage 0xE2 value 1
+晚上10:27:14 page 0x07 usage 0x2B value 0
+晚上10:27:14 page 0x07 usage 0xE2 value 0
+晚上10:27:22 page 0x07 usage 0x52 value 1
+晚上10:27:22 page 0x07 usage 0x52 value 0
+晚上10:27:24 page 0x07 usage 0x51 value 1
+晚上10:27:24 page 0x07 usage 0x51 value 0
+晚上10:27:26 page 0x07 usage 0x50 value 1
+晚上10:27:26 page 0x07 usage 0x50 value 0
+晚上10:27:29 page 0x07 usage 0x4F value 1
+晚上10:27:29 page 0x07 usage 0x4F value 0

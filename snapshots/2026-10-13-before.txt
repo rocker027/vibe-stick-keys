@@ -1,0 +1,55 @@
+# YuVibeStick 改鍵前快照（2026-10-13，唯讀讀取）
+# 請求依序：get_device_info、get_lock_state、get_keymap、get_physical_layouts、check_unsaved_changes
+
+## raw
+indications enabled: true
+>> 08011A020801
+<< 0A1B08011A170A150A0956696265537469636B120873C86903F8169A92
+>> 08021A021001
+<< 0A0608021A021001
+>> 08032A020801
+<< 0AB90108032AB4010AB1010A3612094C3020E9BB98E8AEA41A0208321A06081010A8801C1A06081010A9801C1A07081010AB809C201A04081810021A04081810011A000A37080112094C3120E5AFBCE888AA1A06081010D2801C1A06081010D1801C1A06081010D0801C1A06081010CF801C1A0208301A0208301A000A3A0802120C4C3220E5A49AE5AA92E4BD931A06081010E981301A06081010EA81301A06081010E281301A06081010CD81301A0208301A0208301A0010031814
+>> 08042A023001
+<< 0A5208042A4E324C124A0A0744656661756C74120808C80110C8011864120908C80110C80118AC02120908C80110C80118F403120908C80110C80118BC05120808C801106420F001120A08C8011064186420FC02
+>> 08062A021801
+<< 0A0608062A021801
+done
+
+## decoded
+available_layers=3 max_layer_name_length=20
+
+Layer id=0 name='L0 默认'
+  key_position 0: vibe_ptt
+  key_position 1: Key Press(Enter)
+  key_position 2: Key Press(Esc)
+  key_position 3: Key Press(LAlt+Tab)
+  key_position 4: Momentary Layer(layer=2)
+  key_position 5: Momentary Layer(layer=1)
+  key_position 6: behavior#0
+
+Layer id=1 name='L1 导航'
+  key_position 0: Key Press(Up)
+  key_position 1: Key Press(Down)
+  key_position 2: Key Press(Left)
+  key_position 3: Key Press(Right)
+  key_position 4: Transparent
+  key_position 5: Transparent
+  key_position 6: behavior#0
+
+Layer id=2 name='L2 多媒体'
+  key_position 0: Key Press(Vol+)
+  key_position 1: Key Press(Vol-)
+  key_position 2: Key Press(Mute)
+  key_position 3: Key Press(Play/Pause)
+  key_position 4: Transparent
+  key_position 5: Transparent
+  key_position 6: behavior#0
+
+active_layout_index=0
+layout 'Default':
+  key 0: w=100 h=100 x=50 y=0
+  key 1: w=100 h=100 x=150 y=0
+  key 2: w=100 h=100 x=250 y=0
+  key 3: w=100 h=100 x=350 y=0
+  key 4: w=100 h=50 x=0 y=120
+  key 5: w=100 h=50 x=50 y=190
