@@ -1,6 +1,6 @@
 /// YuVibeStick 的實體按鈕。position 對應 ZMK keymap 的 key position。
-public struct StickButton: Equatable, Identifiable {
-    public enum Role: Equatable {
+public struct StickButton: Equatable, Identifiable, Sendable {
+    public enum Role: Equatable, Sendable {
         case keycap
         case sideButton
         case backSwitch
@@ -28,5 +28,10 @@ public enum StickProfile {
 
     public static func button(at position: Int) -> StickButton? {
         BUTTONS.first { $0.position == position }
+    }
+
+    /// 指定角色的按鈕位置，例如背面層切換開關。UI 依此找位置，不寫死數字。
+    public static func position(of role: StickButton.Role) -> Int? {
+        BUTTONS.first { $0.role == role }?.position
     }
 }

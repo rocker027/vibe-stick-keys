@@ -1,6 +1,5 @@
 import Foundation
 
-
 /// HID usage page 與 usage 的組合，例如鍵盤 page 0x07、consumer page 0x0C。
 public struct HidUsage: Hashable {
     public let page: UInt32

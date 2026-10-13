@@ -36,6 +36,22 @@ public enum StudioRequest: Equatable, Sendable {
     static let CHECK_UNSAVED_CHANGES_FIELD = 3
     static let SAVE_CHANGES_FIELD = 4
     static let GET_BEHAVIOR_DETAILS_FIELD = 2
+    // SetLayerBindingRequest、BehaviorBinding、GetBehaviorDetailsRequest 內的欄位編號
+    static let LAYER_ID_FIELD = 1
+    static let KEY_POSITION_FIELD = 2
+    static let BINDING_FIELD = 3
+    static let BEHAVIOR_ID_FIELD = 1
+    static let PARAM1_FIELD = 2
+    static let PARAM2_FIELD = 3
+    static let DETAILS_BEHAVIOR_ID_FIELD = 1
+
+    /// 會改變鍵盤狀態（執行中配置或永久設定）的請求；StudioBleClient 預設拒絕送出。
+    public var isMutating: Bool {
+        switch self {
+        case .setLayerBinding, .saveChanges: return true
+        case .checkUnsavedChanges, .getKeymap, .getBehaviorDetails: return false
+        }
+    }
 
     /// 編碼成 zmk.studio.Request 的 protobuf 位元組（尚未加框架）。
     public func encode(requestId: UInt32) -> [UInt8] {
@@ -79,17 +95,17 @@ public enum StudioRequest: Equatable, Sendable {
         case .getKeymap:
             return (Self.KEYMAP_SUBSYSTEM_FIELD, ProtoWire.varintField(Self.GET_KEYMAP_FIELD, 1))
         case .getBehaviorDetails(let behaviorId):
-            let details = ProtoWire.optionalVarintField(1, UInt64(behaviorId))
+            let details = ProtoWire.optionalVarintField(Self.DETAILS_BEHAVIOR_ID_FIELD, UInt64(behaviorId))
             return (Self.BEHAVIORS_SUBSYSTEM_FIELD, ProtoWire.messageField(Self.GET_BEHAVIOR_DETAILS_FIELD, details))
         }
     }
 
     private static func encodeSetLayerBinding(_ change: LayerBindingChange) -> [UInt8] {
-        let binding = ProtoWire.optionalVarintField(1, ProtoWire.zigzag(Int32(change.behaviorId)))
-            + ProtoWire.optionalVarintField(2, UInt64(change.param1))
-            + ProtoWire.optionalVarintField(3, UInt64(change.param2))
-        return ProtoWire.optionalVarintField(1, UInt64(change.layerId))
-            + ProtoWire.optionalVarintField(2, UInt64(change.keyPosition))
-            + ProtoWire.messageField(3, binding)
+        let binding = ProtoWire.optionalVarintField(Self.BEHAVIOR_ID_FIELD, ProtoWire.zigzag(Int32(change.behaviorId)))
+            + ProtoWire.optionalVarintField(Self.PARAM1_FIELD, UInt64(change.param1))
+            + ProtoWire.optionalVarintField(Self.PARAM2_FIELD, UInt64(change.param2))
+        return ProtoWire.optionalVarintField(Self.LAYER_ID_FIELD, UInt64(change.layerId))
+            + ProtoWire.optionalVarintField(Self.KEY_POSITION_FIELD, UInt64(change.keyPosition))
+            + ProtoWire.messageField(Self.BINDING_FIELD, binding)
     }
 }

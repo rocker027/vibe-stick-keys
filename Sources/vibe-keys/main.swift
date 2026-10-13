@@ -7,10 +7,6 @@ import StudioProtocol
 
 setbuf(stdout, nil) // 不緩衝：中途失敗時仍保留已輸出的進度
 
-func hexString(_ bytes: [UInt8]) -> String {
-    bytes.map { String(format: "%02X", $0) }.joined()
-}
-
 let invocation: Invocation
 do {
     invocation = try CommandParser.parse(Array(CommandLine.arguments.dropFirst()))
@@ -21,15 +17,14 @@ do {
 
 if invocation.isDryRun {
     for (index, frame) in invocation.framedRequests().enumerated() {
-        print(">> #\(index + 1) \(hexString(frame))（\(frame.count) 位元組）")
+        print(">> #\(index + 1) \(Framing.hexString(frame))（\(frame.count) 位元組）")
     }
     exit(0)
 }
 
 /// 依序送出請求；任何 meta 錯誤立即停止，其他失敗記下後繼續並以 exit 1 結束。
 func run(_ requests: [StudioRequest]) async -> Int32 {
-    let client = StudioBleClient()
-    client.onTrace = { print($0) }
+    let client = StudioBleClient(allowsMutation: true, onTrace: { print($0) })
     var hasFailure = false
     do {
         try await client.connect()

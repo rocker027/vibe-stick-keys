@@ -12,6 +12,17 @@ public enum StudioMessage: Equatable, Sendable {
     static let META_FIELD = 2
     static let BEHAVIORS_FIELD = 4
     static let KEYMAP_FIELD = 5
+    // meta.Response、behaviors.Response、keymap.Response 與其子訊息的欄位編號
+    static let META_SIMPLE_ERROR_FIELD = 2
+    static let BEHAVIOR_DETAILS_FIELD = 2
+    static let DETAILS_ID_FIELD = 1
+    static let DETAILS_NAME_FIELD = 2
+    static let GET_KEYMAP_FIELD = 1
+    static let SET_LAYER_BINDING_FIELD = 2
+    static let CHECK_UNSAVED_FIELD = 3
+    static let SAVE_CHANGES_FIELD = 4
+    static let SAVE_OK_FIELD = 1
+    static let SAVE_ERROR_FIELD = 2
 
     /// 解析一則已去除框架的 zmk.studio.Response。
     public static func decode(_ payload: [UInt8]) throws -> StudioMessage {
@@ -24,19 +35,20 @@ public enum StudioMessage: Equatable, Sendable {
 
     private static func decodeOutcome(_ requestResponse: [ProtoField]) throws -> StudioOutcome {
         if let meta = try requestResponse.message(META_FIELD) {
-            return meta.varint(2).map { .metaError(code: $0) } ?? .unrecognized
+            return meta.varint(META_SIMPLE_ERROR_FIELD).map { .metaError(code: $0) } ?? .unrecognized
         }
         if let behaviors = try requestResponse.message(BEHAVIORS_FIELD) {
-            guard let details = try behaviors.message(2) else { return .unrecognized }
-            return .behaviorDetails(id: UInt32(truncatingIfNeeded: details.varint(1) ?? 0), name: details.string(2) ?? "")
+            guard let details = try behaviors.message(BEHAVIOR_DETAILS_FIELD) else { return .unrecognized }
+            return .behaviorDetails(id: UInt32(truncatingIfNeeded: details.varint(DETAILS_ID_FIELD) ?? 0),
+                                    name: details.string(DETAILS_NAME_FIELD) ?? "")
         }
         guard let keymap = try requestResponse.message(KEYMAP_FIELD) else { return .unrecognized }
-        if let keymapFields = try keymap.message(1) { return .keymap(try Keymap.decode(keymapFields)) }
-        if let code = keymap.varint(2) { return .setLayerBinding(code: code) }
-        if let isUnsaved = keymap.varint(3) { return .unsavedChanges(isUnsaved != 0) }
-        if let save = try keymap.message(4) {
-            let errorCode = save.varint(2)
-            return .saveChanges(isOk: save.varint(1) == 1 && errorCode == nil, errorCode: errorCode)
+        if let keymapFields = try keymap.message(GET_KEYMAP_FIELD) { return .keymap(try Keymap.decode(keymapFields)) }
+        if let code = keymap.varint(SET_LAYER_BINDING_FIELD) { return .setLayerBinding(code: code) }
+        if let isUnsaved = keymap.varint(CHECK_UNSAVED_FIELD) { return .unsavedChanges(isUnsaved != 0) }
+        if let save = try keymap.message(SAVE_CHANGES_FIELD) {
+            let errorCode = save.varint(SAVE_ERROR_FIELD)
+            return .saveChanges(isOk: save.varint(SAVE_OK_FIELD) == 1 && errorCode == nil, errorCode: errorCode)
         }
         return .unrecognized
     }

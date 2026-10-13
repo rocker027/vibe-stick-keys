@@ -1,10 +1,11 @@
 import StickModel
 import SwiftUI
 
-/// 按鈕的顯示狀態：按下中（HID 直接偵測到）或推論被按住（切層鍵，HID 看不到本身）。
+/// 按鈕的顯示狀態：按下中（HID 直接偵測到）、收音中（MIC，經自訂服務偵測）、推論被按住（切層鍵，HID 看不到本身）。
 enum KeyVisualState: Equatable {
     case idle
     case pressed
+    case recording
     case inferred
 }
 
@@ -17,31 +18,35 @@ struct StickView: View {
     static let BODY_SIZE = CGSize(width: 150, height: 560)
     static let KEYCAP_SIZE: CGFloat = 104
     static let KEYCAP_SPACING: CGFloat = 8
-    static let KEYCAPS_ORIGIN = CGPoint(x: LEFT_MARGIN + 72, y: 112)
+    /// 鍵帽置於白色機身水平中央；垂直從格柵下方開始，上下留白相同（格柵底 80 + 20，最後一顆底 540，機身高 560）。
+    static let KEYCAPS_ORIGIN = CGPoint(x: LEFT_MARGIN + (BODY_SIZE.width - KEYCAP_SIZE) / 2, y: 100)
+    /// 說明引線從機身右緣外 8pt 開始，不壓在機身上。
+    static let CALLOUT_GAP: CGFloat = (BODY_SIZE.width - KEYCAP_SIZE) / 2 + 8
     static let SIDE_BUTTON_ORIGIN = CGPoint(x: LEFT_MARGIN - 10, y: 72)
     static let CALLOUT_WIDTH: CGFloat = 250
     static let KEYCAP_ICONS = ["MIC": "mic", "APPR": "checkmark.circle", "REJ": "xmark.circle", "OAI": "sparkles"]
+    static let SIDE_BUTTON_POSITION = StickProfile.position(of: .sideButton) ?? 4
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             StickBody().offset(x: Self.LEFT_MARGIN)
-            SideButton(state: state(for: 4)).offset(x: Self.SIDE_BUTTON_ORIGIN.x, y: Self.SIDE_BUTTON_ORIGIN.y)
+            SideButton(state: state(for: Self.SIDE_BUTTON_POSITION)).offset(x: Self.SIDE_BUTTON_ORIGIN.x, y: Self.SIDE_BUTTON_ORIGIN.y)
             sideButtonCallout.offset(y: Self.SIDE_BUTTON_ORIGIN.y + 8)
             BackPanel(viewModel: viewModel).offset(y: 300)
             keycapColumn.offset(x: Self.KEYCAPS_ORIGIN.x, y: Self.KEYCAPS_ORIGIN.y)
         }
-        .frame(width: Self.KEYCAPS_ORIGIN.x + Self.KEYCAP_SIZE + 20 + Self.CALLOUT_WIDTH,
+        .frame(width: Self.KEYCAPS_ORIGIN.x + Self.KEYCAP_SIZE + Self.CALLOUT_GAP + Self.CALLOUT_WIDTH,
                height: Self.BODY_SIZE.height, alignment: .topLeading)
     }
 
     private var keycapColumn: some View {
         VStack(alignment: .leading, spacing: Self.KEYCAP_SPACING) {
             ForEach(StickProfile.BUTTONS.filter { $0.role == .keycap }) { button in
-                HStack(spacing: 20) {
+                HStack(spacing: Self.CALLOUT_GAP) {
                     KeycapView(legend: button.legend, icon: Self.KEYCAP_ICONS[button.legend] ?? "circle",
                                state: state(for: button.position))
                     KeyCallout(title: viewModel.label(position: button.position, layerIndex: viewModel.displayedLayerIndex),
-                               caption: layerSummary(position: button.position), state: state(for: button.position))
+                               caption: caption(for: button.position), state: state(for: button.position))
                 }
             }
         }
@@ -49,12 +54,17 @@ struct StickView: View {
 
     private var sideButtonCallout: some View {
         VStack(alignment: .trailing, spacing: 3) {
-            Text(viewModel.label(position: 4, layerIndex: viewModel.displayedLayerIndex))
+            Text(viewModel.label(position: Self.SIDE_BUTTON_POSITION, layerIndex: viewModel.displayedLayerIndex))
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(state(for: 4) == .inferred ? Color.orange : Color.primary)
-            Text("左側層切換按鍵 · 位置 4").font(.caption).foregroundStyle(.secondary)
+                .foregroundStyle(state(for: Self.SIDE_BUTTON_POSITION) == .inferred ? Color.orange : Color.primary)
+            Text("左側層切換按鍵 · 位置 \(Self.SIDE_BUTTON_POSITION)").font(.caption).foregroundStyle(.secondary)
         }
         .frame(width: Self.LEFT_MARGIN - 30, alignment: .trailing)
+    }
+
+    private func caption(for position: Int) -> String {
+        let summary = layerSummary(position: position)
+        return state(for: position) == .recording ? "收音中 · " + summary : summary
     }
 
     /// 其他層的對應，讓使用者一眼看到這顆鍵在各層的功能。
@@ -65,6 +75,7 @@ struct StickView: View {
     }
 
     private func state(for position: Int) -> KeyVisualState {
+        if viewModel.micSession.isRecording, viewModel.micPositions.contains(position) { return .recording }
         if viewModel.pressedPositions.contains(position) { return .pressed }
         if viewModel.inferredLayerKeys.contains(position) { return .inferred }
         return .idle
@@ -94,18 +105,26 @@ struct KeycapView: View {
     let icon: String
     let state: KeyVisualState
 
+    /// 按下用綠色、收音用紅色，對應實機燈光的直覺。
+    private var highlight: Color? {
+        switch state {
+        case .pressed: return .green
+        case .recording: return .red
+        case .idle, .inferred: return nil
+        }
+    }
+
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 26, style: .continuous)
         return shape
-            .fill(state == .pressed ? Color.green : Color.white)
+            .fill(highlight ?? Color.white)
             .overlay(shape.stroke(Color.black.opacity(0.12)))
             .overlay(VStack(spacing: 4) {
-                Image(systemName: icon).font(.system(size: 26, weight: .medium))
+                Image(systemName: state == .recording ? icon + ".fill" : icon).font(.system(size: 26, weight: .medium))
                 Text(legend).font(.system(size: 13, weight: .heavy))
-            }.foregroundStyle(state == .pressed ? Color.white : Color(white: 0.2)))
-            .shadow(color: state == .pressed ? Color.green.opacity(0.8) : Color.black.opacity(0.18),
-                    radius: state == .pressed ? 16 : 3, y: 2)
-            .scaleEffect(state == .pressed ? 0.95 : 1)
+            }.foregroundStyle(highlight == nil ? Color(white: 0.2) : Color.white))
+            .shadow(color: highlight?.opacity(0.8) ?? Color.black.opacity(0.18), radius: highlight == nil ? 3 : 16, y: 2)
+            .scaleEffect(highlight == nil ? 1 : 0.95)
             .animation(.easeOut(duration: 0.08), value: state)
             .frame(width: StickView.KEYCAP_SIZE, height: StickView.KEYCAP_SIZE)
     }
@@ -135,7 +154,7 @@ struct KeyCallout: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(state == .pressed ? Color.green : Color.primary)
+                    .foregroundStyle(state == .pressed ? Color.green : state == .recording ? Color.red : Color.primary)
                 Text(caption).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -147,13 +166,15 @@ struct KeyCallout: View {
 struct BackPanel: View {
     @ObservedObject var viewModel: StickViewModel
 
+    static let BACK_SWITCH_POSITION = StickProfile.position(of: .backSwitch) ?? 5
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("背面").font(.headline)
             HStack(spacing: 10) {
-                SwitchGlyph(isOn: switchState == .layerOne, isInferred: viewModel.inferredLayerKeys.contains(5))
+                SwitchGlyph(isOn: switchState == .switchedOn, isInferred: switchState == .switchedOn)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("層切換開關 · 位置 5").font(.subheadline.weight(.semibold))
+                    Text("層切換開關 · 位置 \(Self.BACK_SWITCH_POSITION)").font(.subheadline.weight(.semibold))
                     Text(switchDescription).font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -170,18 +191,19 @@ struct BackPanel: View {
         .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondary.opacity(0.08)))
     }
 
-    private enum SwitchState { case unknown, layerZero, layerOne }
+    private enum SwitchState { case unknown, switchedOff, switchedOn }
 
+    /// 開關撥上時等於一直按住它的切層鍵，所以由「推論被按住的切層鍵」是否包含它的位置判斷。
     private var switchState: SwitchState {
-        if viewModel.activeLayerIndex == 1 { return .layerOne }
-        return viewModel.hasObservedKey && viewModel.activeLayerIndex == 0 ? .layerZero : .unknown
+        if viewModel.inferredLayerKeys.contains(Self.BACK_SWITCH_POSITION) { return .switchedOn }
+        return viewModel.hasObservedKey && viewModel.activeLayerIndex == 0 ? .switchedOff : .unknown
     }
 
     private var switchDescription: String {
         switch switchState {
         case .unknown: return "未知；按任一鍵帽後推論"
-        case .layerZero: return "推論在 \(viewModel.layerName(index: 0))"
-        case .layerOne: return "推論在 \(viewModel.layerName(index: 1))"
+        case .switchedOff: return "推論未撥上，目前在 \(viewModel.layerName(index: 0))"
+        case .switchedOn: return "推論已撥上：\(viewModel.label(position: Self.BACK_SWITCH_POSITION, layerIndex: 0))"
         }
     }
 }

@@ -1,3 +1,5 @@
+import Foundation
+
 /// ZMK Studio RPC 的訊息框架，規則與 zmk `app/src/studio/msg_framing.h` 相同。
 /// BLE 寫入會直接進韌體的 RPC ring buffer，所以 BLE 與 UART 共用這套框架。
 public enum Framing {
@@ -12,6 +14,11 @@ public enum Framing {
     public static func encode(_ payload: [UInt8]) -> [UInt8] {
         let body = payload.flatMap { byte in isSpecial(byte) ? [ESCAPE, byte] : [byte] }
         return [START_OF_FRAME] + body + [END_OF_FRAME]
+    }
+
+    /// 以大寫十六進位連續印出，供 CLI 與診斷輸出共用。
+    public static func hexString(_ bytes: [UInt8]) -> String {
+        bytes.map { String(format: "%02X", $0) }.joined()
     }
 
     static func isSpecial(_ byte: UInt8) -> Bool {

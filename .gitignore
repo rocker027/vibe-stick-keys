@@ -1,2 +1,3 @@
 .omc/
 .build/
+__pycache__/

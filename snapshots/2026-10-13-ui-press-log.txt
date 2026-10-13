@@ -1,0 +1,48 @@
+# vibe-keys-ui 實機試按紀錄（2026-10-13 22:41–22:42，使用者操作；UI 診斷輸出原文）
+
+[vibe-keys-ui] 按鍵監聽：監聽中
+[vibe-keys-ui] 配置讀取完成：L0 默认［vibe_ptt／Enter／Esc／⌥ Tab／按住切到 L2 多媒体／按住切到 L1 导航］ L1 导航［↑／↓／←／→／按住切到 L2 多媒体／按住切到 L1 导航］ L2 多媒体［音量 +／音量 −／靜音／播放／暫停／按住切到 L2 多媒体／按住切到 L1 导航］
+[vibe-keys-ui] 配置讀取完成：L0 默认［vibe_ptt／Enter／Esc／⌥ Tab／按住切到 L2 多媒体／按住切到 L1 导航］ L1 导航［↑／↓／←／→／按住切到 L2 多媒体／按住切到 L1 导航］ L2 多媒体［音量 +／音量 −／靜音／播放／暫停／按住切到 L2 多媒体／按住切到 L1 导航］
+[vibe-keys-ui] 晚上10:41:58 REJ 按下 → ←（L1 导航）
+[vibe-keys-ui] 晚上10:42:01 MIC 按下 → ↑（L1 导航）
+[vibe-keys-ui] 晚上10:42:01 MIC 按下 → ↑（L1 导航）
+[vibe-keys-ui] 晚上10:42:02 APPR 按下 → ↓（L1 导航）
+[vibe-keys-ui] 晚上10:42:03 APPR 按下 → ↓（L1 导航）
+[vibe-keys-ui] 晚上10:42:03 APPR 按下 → ↓（L1 导航）
+[vibe-keys-ui] 晚上10:42:03 MIC 按下 → ↑（L1 导航）
+[vibe-keys-ui] 晚上10:42:04 MIC 按下 → ↑（L1 导航）
+[vibe-keys-ui] 晚上10:42:04 REJ 按下 → ←（L1 导航）
+[vibe-keys-ui] 晚上10:42:05 OAI 按下 → →（L1 导航）
+[vibe-keys-ui] 晚上10:42:15 APPR 按下 → Enter（L0 默认）
+[vibe-keys-ui] 晚上10:42:16 APPR 按下 → Enter（L0 默认）
+[vibe-keys-ui] 晚上10:42:16 APPR 按下 → Enter（L0 默认）
+[vibe-keys-ui] 晚上10:42:16 APPR 按下 → Enter（L0 默认）
+[vibe-keys-ui] 晚上10:42:17 APPR 按下 → Enter（L0 默认）
+[vibe-keys-ui] 晚上10:42:20 APPR 按下 → Enter（L0 默认）
+[vibe-keys-ui] 晚上10:42:22 REJ 按下 → Esc（L0 默认）
+[vibe-keys-ui] 晚上10:42:22 REJ 按下 → Esc（L0 默认）
+[vibe-keys-ui] 晚上10:42:22 REJ 按下 → Esc（L0 默认）
+[vibe-keys-ui] 晚上10:42:23 REJ 按下 → Esc（L0 默认）
+[vibe-keys-ui] 晚上10:42:26 MIC 按下 → ↑（L1 导航）
+[vibe-keys-ui] 晚上10:42:27 APPR 按下 → ↓（L1 导航）
+[vibe-keys-ui] 晚上10:42:27 REJ 按下 → ←（L1 导航）
+[vibe-keys-ui] 晚上10:42:28 OAI 按下 → →（L1 导航）
+[vibe-keys-ui] 晚上10:42:28 REJ 按下 → ←（L1 导航）
+[vibe-keys-ui] 晚上10:42:28 APPR 按下 → ↓（L1 导航）
+[vibe-keys-ui] 晚上10:42:28 APPR 按下 → ↓（L1 导航）
+[vibe-keys-ui] 晚上10:42:29 MIC 按下 → ↑（L1 导航）
+[vibe-keys-ui] 晚上10:42:29 APPR 按下 → ↓（L1 导航）
+[vibe-keys-ui] 晚上10:42:29 APPR 按下 → ↓（L1 导航）
+[vibe-keys-ui] 晚上10:42:29 REJ 按下 → ←（L1 导航）
+[vibe-keys-ui] 晚上10:42:29 OAI 按下 → →（L1 导航）
+[vibe-keys-ui] 晚上10:42:30 APPR 按下 → ↓（L1 导航）
+[vibe-keys-ui] 晚上10:42:30 APPR 按下 → ↓（L1 导航）
+[vibe-keys-ui] 晚上10:42:30 MIC 按下 → ↑（L1 导航）
+
+# 連線狀態實測（22:45–22:46，使用者關閉再開啟背面電源開關；新版 UI 診斷輸出原文）
+
+[vibe-keys-ui] 按鍵監聽：監聽中
+[vibe-keys-ui] 晚上10:45:32 鍵盤已連線
+[vibe-keys-ui] 配置讀取完成：L0 默认［vibe_ptt／Enter／Esc／⌥ Tab／按住切到 L2 多媒体／按住切到 L1 导航］ L1 导航［↑／↓／←／→／按住切到 L2 多媒体／按住切到 L1 导航］ L2 多媒体［音量 +／音量 −／靜音／播放／暫停／按住切到 L2 多媒体／按住切到 L1 导航］
+[vibe-keys-ui] 晚上10:46:00 鍵盤已斷線
+[vibe-keys-ui] 晚上10:46:05 鍵盤已連線

@@ -80,6 +80,24 @@ struct RequestEncodingTests {
         #expect(StudioRequest.checkUnsavedChanges.accepts(.metaError(code: 1)))
     }
 
+    @Test("只有 set 與 save 被視為會改動鍵盤的請求")
+    func classifiesMutatingRequests() {
+        let change = LayerBindingChange(layerId: 0, keyPosition: 3, behaviorId: 8, param1: LGUI_TAB, param2: 0)
+        #expect(StudioRequest.setLayerBinding(change).isMutating)
+        #expect(StudioRequest.saveChanges.isMutating)
+        #expect(!StudioRequest.checkUnsavedChanges.isMutating)
+        #expect(!StudioRequest.getKeymap.isMutating)
+        #expect(!StudioRequest.getBehaviorDetails(behaviorId: 8).isMutating)
+    }
+
+    @Test("keymap 中負數的 behavior_id 依 sint32 zigzag 還原")
+    func decodesNegativeBehaviorId() throws {
+        // Keymap{ layers{ id 0, bindings{ behavior_id = zigzag(-3) = 5 } } }，包在 get_keymap 回應裡
+        let message = try StudioMessage.decode(hex("0A0C08012A080A060A041A020805"))
+        guard case .response(_, .keymap(let keymap)) = message else { Issue.record("沒有解成 keymap"); return }
+        #expect(keymap.layers.first?.bindings == [KeyBinding(behaviorId: -3, param1: 0, param2: 0)])
+    }
+
     @Test("save_changes 請求編碼為 keymap 欄位 4")
     func encodesSaveChanges() {
         #expect(StudioRequest.saveChanges.encode(requestId: 2) == hex("08022A022001"))

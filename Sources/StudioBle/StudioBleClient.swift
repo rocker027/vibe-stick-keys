@@ -1,4 +1,4 @@
-import CoreBluetooth
+@preconcurrency import CoreBluetooth
 import Foundation
 import StudioProtocol
 
@@ -7,6 +7,7 @@ public enum StudioBleError: Error, CustomStringConvertible {
     case deviceNotFound(String)
     case setupFailed(String)
     case busy
+    case mutationNotAllowed(String)
     case frameTooLong(Int)
     /// 斷線或逾時時若有請求已送出，韌體可能已經執行它，只是回應沒收到。
     case disconnected(inFlight: String?)
@@ -19,12 +20,15 @@ public enum StudioBleError: Error, CustomStringConvertible {
         case .bluetoothUnavailable(let reason): return "藍牙不可用：\(reason)"
         case .deviceNotFound(let name): return "找不到已連線的 \(name)"
         case .setupFailed(let reason): return "連線設定失敗：\(reason)"
-        case .busy: return "上一個請求尚未完成"
+        case .busy: return "上一個請求或連線尚未完成"
+        case .mutationNotAllowed(let name): return "這個 client 不允許送出會改動鍵盤的請求（\(name)）"
         case .frameTooLong(let count): return "框架 \(count) 位元組超過韌體上限 \(Framing.MAX_FIRMWARE_FRAME_BYTES)"
         case .disconnected(let inFlight): return "連線中斷" + Self.inFlightNote(inFlight)
-        case .timeout(let inFlight): return "逾時" + Self.inFlightNote(inFlight)
+        case .timeout(let inFlight):
+            // 韌體只在 BLE 是目前輸出端點時處理寫入；切到 USB 輸出時會默默丟棄，只能等到逾時
+            return "逾時（若鍵盤輸出切到 USB，藍牙請求會被忽略）" + Self.inFlightNote(inFlight)
         case .writeFailed(let reason): return "寫入失敗：\(reason)"
-        case .unexpectedResponse(let detail): return "回應與請求不符：\(detail)"
+        case .unexpectedResponse(let detail): return "回應無法解讀：\(detail)。請求可能已執行，請用 probe 讀回確認"
         }
     }
 
@@ -36,7 +40,7 @@ public enum StudioBleError: Error, CustomStringConvertible {
 
 /// 透過 BLE 呼叫 ZMK Studio RPC 的 client：一次只處理一個請求，等到對應回應才完成。
 /// 所有 CoreBluetooth 回呼與內部狀態都在同一條序列 queue 上，continuation 也只在這條 queue 上 resume。
-/// 標為 @unchecked Sendable：所有可變狀態只在私有序列 queue 上讀寫。
+/// 標為 @unchecked Sendable：所有可變狀態只在私有序列 queue 上讀寫；onTrace 與 allowsMutation 在建立時固定。
 public final class StudioBleClient: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, @unchecked Sendable {
     public static let STUDIO_SERVICE = CBUUID(string: "00000000-0196-6107-C967-C5CFB1C2482A")
     public static let RPC_CHARACTERISTIC = CBUUID(string: "00000001-0196-6107-C967-C5CFB1C2482A")
@@ -62,15 +66,24 @@ public final class StudioBleClient: NSObject, CBCentralManagerDelegate, CBPeriph
     private var timeoutGeneration = 0
 
     /// 收發的原始框架與略過的通知；CLI 用來印出證據。回呼在 BLE queue 上執行。
-    public var onTrace: ((String) -> Void)?
+    private let onTrace: ((String) -> Void)?
+    /// 預設 false：只允許唯讀請求。只有 CLI 會明確開啟。
+    private let allowsMutation: Bool
 
-    public init(targetName: String = "YuVibeStick") {
+    public init(targetName: String = "YuVibeStick", allowsMutation: Bool = false, onTrace: ((String) -> Void)? = nil) {
         self.targetName = targetName
+        self.allowsMutation = allowsMutation
+        self.onTrace = onTrace
     }
 
     public func connect(timeout: TimeInterval = 15) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             queue.async {
+                // 每個 client 只連線一次；重複呼叫會覆寫 continuation 讓前一個呼叫永遠等不到結果
+                guard self.central == nil, self.connectContinuation == nil else {
+                    continuation.resume(throwing: StudioBleError.busy)
+                    return
+                }
                 self.connectContinuation = continuation
                 self.armTimeout(timeout)
                 self.central = CBCentralManager(delegate: self, queue: self.queue)
@@ -93,6 +106,10 @@ public final class StudioBleClient: NSObject, CBCentralManagerDelegate, CBPeriph
 
     private func start(_ request: StudioRequest, timeout: TimeInterval, continuation: CheckedContinuation<StudioOutcome, Error>) {
         guard inFlight == nil, connectContinuation == nil else { continuation.resume(throwing: StudioBleError.busy); return }
+        guard allowsMutation || !request.isMutating else {
+            continuation.resume(throwing: StudioBleError.mutationNotAllowed(request.name))
+            return
+        }
         guard let device = peripheral, rpcCharacteristic != nil else {
             continuation.resume(throwing: StudioBleError.disconnected(inFlight: nil))
             return
@@ -104,7 +121,7 @@ public final class StudioBleClient: NSObject, CBCentralManagerDelegate, CBPeriph
         }
         inFlight = InFlight(request: request, requestId: nextRequestId, continuation: continuation)
         nextRequestId += 1
-        onTrace?(">> #\(inFlight!.requestId) \(Self.hexString(frame))")
+        onTrace?(">> #\(nextRequestId - 1) \(Framing.hexString(frame))")
         // 用 withoutResponse 的上限（ATT_MTU-3）切塊，讓每塊都是單一 Write Request、不走 Prepare/Execute 長寫入：
         // 韌體 write_rpc_req 忽略 offset，長寫入會出錯。
         let chunkSize = max(Self.MIN_WRITE_CHUNK, device.maximumWriteValueLength(for: .withoutResponse))
@@ -121,8 +138,8 @@ public final class StudioBleClient: NSObject, CBCentralManagerDelegate, CBPeriph
     private func armTimeout(_ seconds: TimeInterval) {
         timeoutGeneration += 1
         let generation = timeoutGeneration
-        queue.asyncAfter(deadline: .now() + seconds) {
-            guard generation == self.timeoutGeneration else { return }
+        queue.asyncAfter(deadline: .now() + seconds) { [weak self] in
+            guard let self, generation == self.timeoutGeneration else { return }
             self.failPending(StudioBleError.timeout(inFlight: self.inFlight?.description))
         }
     }
@@ -140,10 +157,6 @@ public final class StudioBleClient: NSObject, CBCentralManagerDelegate, CBPeriph
         timeoutGeneration += 1
         connectContinuation?.resume()
         connectContinuation = nil
-    }
-
-    static func hexString(_ bytes: [UInt8]) -> String {
-        bytes.map { String(format: "%02X", $0) }.joined()
     }
 
     // MARK: - CBCentralManagerDelegate
@@ -223,7 +236,7 @@ public final class StudioBleClient: NSObject, CBCentralManagerDelegate, CBPeriph
     }
 
     private func handle(_ payload: [UInt8]) {
-        onTrace?("<< \(Self.hexString(payload))")
+        onTrace?("<< \(Framing.hexString(payload))")
         let message: StudioMessage
         do { message = try StudioMessage.decode(payload) } catch {
             failPending(StudioBleError.unexpectedResponse("無法解碼 \(error)"))
