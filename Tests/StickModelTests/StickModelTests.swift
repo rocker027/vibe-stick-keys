@@ -229,6 +229,21 @@ struct PressTrackerTests {
         #expect(tracker.handle(keyboard(0x28, true)) == .pressed(position: 1, layerIndex: 1))
     }
 
+    @Test("Layer-Tap 點按送出的鍵對應回該位置，按住後的 L2 鍵推論出它是切層鍵")
+    func tracksLayerTapKey() throws {
+        let base = try realKeymap().keymap.layers
+        var bindings = base[0].bindings
+        bindings[3] = KeyBinding(behaviorId: 13, param1: 2, param2: 0x0407_002B) // OAI：按住 L2、點按 ⌥Tab
+        let keymap = StickKeymap(keymap: Keymap(layers: [KeymapLayer(id: 0, name: base[0].name, bindings: bindings)] + base.dropFirst()),
+                                 behaviorNames: REAL_BEHAVIOR_NAMES)
+        #expect(keymap.label(layerIndex: 0, position: 3) == "按住 L2 多媒体／點按 ⌥ Tab")
+        var tracker = PressTracker(keymap: keymap)
+        #expect(tracker.handle(keyboard(0x2B, true)) == .pressed(position: 3, layerIndex: 0))
+        _ = tracker.handle(keyboard(0x2B, false))
+        #expect(tracker.handle(HidEvent(page: 0x0C, usage: 0xE9, isPressed: true)) == .pressed(position: 0, layerIndex: 2))
+        #expect(tracker.inferredLayerKeys == [3, 4])
+    }
+
     @Test("consumer page 的集合 usage 0x01 被略過")
     func ignoresConsumerCollectionUsage() throws {
         var tracker = PressTracker(keymap: try realKeymap())

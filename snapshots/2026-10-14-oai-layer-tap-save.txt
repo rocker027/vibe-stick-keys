@@ -1,0 +1,84 @@
+# OAI 改為 Layer-Tap 並存進鍵盤（2026-10-14）
+
+## 1. 執行中設定（未存檔）
+.build/debug/vibe-keys set 0 3 13 2 0x0407002B → set_layer_binding OK(0)
+
+## 2. 存檔前與改鍵前快照的差異（decode_keymap.py 輸出 diff）
+7c7
+<   key_position 3: Key Press(LAlt+Tab)
+---
+>   key_position 3: Layer-Tap(layer=2, tap=LAlt+Tab)
+
+## 3. 存檔（.build/debug/vibe-keys save）
+連線就緒
+>> #1 AB08012A021801AD
+<< 0A0608012A021801
+   check_unsaved_changes true
+>> #2 AB08022A022001AD
+<< 12042A020800
+   （通知或非目前請求的回應，略過）
+<< 0A0808022A0422020801
+   save_changes ok
+>> #3 AB08032A021801AD
+<< 0A0608032A021800
+   check_unsaved_changes false
+完成
+
+## 4. 實測 L2：按住 OAI 時的 consumer 事件（probe/hid_listen.swift，已濾掉簿記值）
+凌晨12:08:09 page 0x0C usage 0xE2 value 1
+凌晨12:08:09 page 0x0C usage 0xE2 value 0
+凌晨12:08:09 page 0x0C usage 0xE2 value 1
+凌晨12:08:11 page 0x0C usage 0xE2 value 0
+凌晨12:08:13 page 0x0C usage 0xE2 value 1
+凌晨12:08:13 page 0x0C usage 0xE2 value 0
+凌晨12:08:14 page 0x0C usage 0xEA value 1
+凌晨12:08:14 page 0x0C usage 0xEA value 0
+凌晨12:08:14 page 0x0C usage 0xEA value 1
+凌晨12:08:15 page 0x0C usage 0xEA value 0
+凌晨12:08:15 page 0x0C usage 0xE2 value 1
+凌晨12:08:15 page 0x0C usage 0xE2 value 0
+凌晨12:08:15 page 0x0C usage 0xE2 value 1
+凌晨12:08:15 page 0x0C usage 0xE2 value 0
+凌晨12:08:15 page 0x0C usage 0xE2 value 1
+凌晨12:08:16 page 0x0C usage 0xE2 value 0
+凌晨12:08:16 page 0x0C usage 0xE2 value 1
+凌晨12:08:16 page 0x0C usage 0xE2 value 0
+凌晨12:08:18 page 0x0C usage 0xE2 value 1
+凌晨12:08:18 page 0x0C usage 0xE2 value 0
+凌晨12:08:19 page 0x0C usage 0xE2 value 1
+凌晨12:08:19 page 0x0C usage 0xE2 value 0
+凌晨12:09:38 page 0x0C usage 0xE9 value 1
+凌晨12:09:38 page 0x0C usage 0xE9 value 0
+凌晨12:09:39 page 0x0C usage 0xEA value 1
+凌晨12:09:39 page 0x0C usage 0xEA value 0
+凌晨12:09:39 page 0x0C usage 0xE9 value 1
+凌晨12:09:40 page 0x0C usage 0xE9 value 0
+凌晨12:09:40 page 0x0C usage 0xEA value 1
+凌晨12:09:40 page 0x0C usage 0xEA value 0
+凌晨12:09:40 page 0x0C usage 0xE9 value 1
+凌晨12:09:40 page 0x0C usage 0xE9 value 0
+凌晨12:09:41 page 0x0C usage 0xE9 value 1
+凌晨12:09:41 page 0x0C usage 0xE9 value 0
+凌晨12:09:41 page 0x0C usage 0xEA value 1
+凌晨12:09:41 page 0x0C usage 0xEA value 0
+
+## 5. 電源關開後讀回（UI 紀錄 00:23:40 已斷線、00:23:43 已連線）
+indications enabled: true
+>> 08032A020801
+<< 0ABB0108032AB6010AB3010A3812094C3020E9BB98E8AEA41A0208321A06081010A8801C1A06081010A9801C1A09081A100218AB809C201A04081810021A04081810011A000A37080112094C3120E5AFBCE888AA1A06081010D2801C1A06081010D1801C1A06081010D0801C1A06081010CF801C1A0208301A0208301A000A3A0802120C4C3220E5A49AE5AA92E4BD931A06081010E981301A06081010EA81301A06081010E281301A06081010CD81301A0208301A0208301A0010031814
+>> 08042A023001
+<< 0A5208042A4E324C124A0A0744656661756C74120808C80110C8011864120908C80110C80118AC02120908C80110C80118F403120908C80110C80118BC05120808C801106420F001120A08C8011064186420FC02
+>> 08062A021801
+<< 0A0608062A021800
+done
+
+available_layers=3 max_layer_name_length=20
+
+Layer id=0 name='L0 默认'
+  key_position 0: vibe_ptt
+  key_position 1: Key Press(Enter)
+  key_position 2: Key Press(Esc)
+  key_position 3: Layer-Tap(layer=2, tap=LAlt+Tab)
+  key_position 4: Momentary Layer(layer=2)
+  key_position 5: Momentary Layer(layer=1)
+  key_position 6: behavior#0

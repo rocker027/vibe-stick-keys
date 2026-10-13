@@ -25,12 +25,11 @@ struct StickView: View {
     static let SIDE_BUTTON_ORIGIN = CGPoint(x: LEFT_MARGIN - 10, y: 72)
     static let CALLOUT_WIDTH: CGFloat = 250
     static let KEYCAP_ICONS = ["MIC": "mic", "APPR": "checkmark.circle", "REJ": "xmark.circle", "OAI": "sparkles"]
-    static let SIDE_BUTTON_POSITION = StickProfile.position(of: .sideButton) ?? 4
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             StickBody().offset(x: Self.LEFT_MARGIN)
-            SideButton(state: state(for: Self.SIDE_BUTTON_POSITION)).offset(x: Self.SIDE_BUTTON_ORIGIN.x, y: Self.SIDE_BUTTON_ORIGIN.y)
+            SideButton(state: .idle).offset(x: Self.SIDE_BUTTON_ORIGIN.x, y: Self.SIDE_BUTTON_ORIGIN.y)
             sideButtonCallout.offset(y: Self.SIDE_BUTTON_ORIGIN.y + 8)
             BackPanel(viewModel: viewModel).offset(y: 300)
             keycapColumn.offset(x: Self.KEYCAPS_ORIGIN.x, y: Self.KEYCAPS_ORIGIN.y)
@@ -52,12 +51,12 @@ struct StickView: View {
         }
     }
 
+    /// 左側按鍵是 Studio 看不到的韌體位置，無法讀取綁定、改鍵或偵測，只做標示。
     private var sideButtonCallout: some View {
         VStack(alignment: .trailing, spacing: 3) {
-            Text(viewModel.label(position: Self.SIDE_BUTTON_POSITION, layerIndex: viewModel.displayedLayerIndex))
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(state(for: Self.SIDE_BUTTON_POSITION) == .inferred ? Color.orange : Color.primary)
-            Text("左側層切換按鍵 · 位置 \(Self.SIDE_BUTTON_POSITION)").font(.caption).foregroundStyle(.secondary)
+            Text("左側按鍵").font(.system(size: 17, weight: .semibold)).foregroundStyle(.secondary)
+            Text("Studio 看不到這個位置，無法改鍵或偵測").font(.caption).foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing).fixedSize(horizontal: false, vertical: true)
         }
         .frame(width: Self.LEFT_MARGIN - 30, alignment: .trailing)
     }
@@ -119,6 +118,8 @@ struct KeycapView: View {
         return shape
             .fill(highlight ?? Color.white)
             .overlay(shape.stroke(Color.black.opacity(0.12)))
+            // 推論被按住的切層鍵（例如按住 OAI 切到 L2）用橘色虛線框
+            .overlay(shape.stroke(Color.orange, style: StrokeStyle(lineWidth: 3, dash: [6, 4])).opacity(state == .inferred ? 1 : 0))
             .overlay(VStack(spacing: 4) {
                 Image(systemName: state == .recording ? icon + ".fill" : icon).font(.system(size: 26, weight: .medium))
                 Text(legend).font(.system(size: 13, weight: .heavy))

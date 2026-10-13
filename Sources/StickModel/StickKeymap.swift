@@ -7,6 +7,8 @@ public struct StickKeymap: Equatable, Sendable {
     public let behaviorNames: [Int32: String]
 
     static let KEY_PRESS = "Key Press"
+    /// 點按時送出 param2 按鍵的 hold-tap 類 behavior；Layer-Tap 按住切層，Mod-Tap 按住送修飾鍵。
+    static let TAP_KEY_BEHAVIORS: Set<String> = ["Layer-Tap", "Mod-Tap"]
     static let TRANSPARENT = "Transparent"
     static let LAYER_BEHAVIORS: Set<String> = ["Momentary Layer", "Toggle Layer", "To Layer", "Sticky Layer", "Layer-Tap"]
 
@@ -61,17 +63,24 @@ public struct StickKeymap: Equatable, Sendable {
         return Set(positions)
     }
 
-    /// 在各層實際生效（Transparent 往下找之後）為 Key Press 且 usage 相符的（層索引, 位置, 按鍵）。
+    /// 在各層實際生效（Transparent 往下找之後）會送出該 usage 的（層索引, 位置, 按鍵）。
     /// 用生效綁定而非原始綁定：上層 Transparent 的鍵按下時，上層仍是目前層，不能誤判回到下層。
     func keyPressLocations(for usage: HidUsage) -> [(layerIndex: Int, position: Int, keyCode: KeyCode)] {
         layers.indices.flatMap { layerIndex in
             layers[layerIndex].bindings.indices.compactMap { position -> (layerIndex: Int, position: Int, keyCode: KeyCode)? in
                 guard let (binding, _) = effectiveBinding(layerIndex: layerIndex, position: position),
-                      behaviorName(binding) == Self.KEY_PRESS else { return nil }
-                let keyCode = KeyCode(param: binding.param1)
+                      let keyCode = sentKeyCode(binding) else { return nil }
                 return keyCode.usage == usage ? (layerIndex, position, keyCode) : nil
             }
         }
+    }
+
+    /// 這個綁定點按時送出的按鍵：Key Press 看 param1，Layer-Tap／Mod-Tap 的點按看 param2。
+    func sentKeyCode(_ binding: KeyBinding) -> KeyCode? {
+        let name = behaviorName(binding) ?? ""
+        if name == Self.KEY_PRESS { return KeyCode(param: binding.param1) }
+        if Self.TAP_KEY_BEHAVIORS.contains(name) { return KeyCode(param: binding.param2) }
+        return nil
     }
 }
 

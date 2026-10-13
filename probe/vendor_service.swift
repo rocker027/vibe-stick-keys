@@ -1,4 +1,4 @@
-// 唯讀探測：列出 YuVibeStick 賣家自訂服務 1ACCAC91-… 與 Device Information 的特徵值、描述，
+// 唯讀探測：列出 YuVibeStick 賣家自訂服務 1ACCAC91-…、Device Information 與 Battery 的特徵值、描述，
 // 並讀出可讀的值。不寫入任何特徵值或描述，也不訂閱通知（不寫 CCCD）。
 import CoreBluetooth
 import Foundation
@@ -8,6 +8,7 @@ setbuf(stdout, nil)
 let TARGET_NAME = "YuVibeStick"
 let VENDOR_SERVICE = CBUUID(string: "1ACCAC91-73C2-41CA-AF88-7C02247CA900")
 let DEVICE_INFO_SERVICE = CBUUID(string: "180A")
+let BATTERY_SERVICE = CBUUID(string: "180F")
 let TIMEOUT_SECONDS = 20.0
 
 func describeProperties(_ properties: CBCharacteristicProperties) -> String {
@@ -38,7 +39,7 @@ final class VendorServiceProbe: NSObject, CBCentralManagerDelegate, CBPeripheral
 
     func centralManagerDidUpdateState(_ bleCentral: CBCentralManager) {
         guard bleCentral.state == .poweredOn else { return }
-        let candidates = bleCentral.retrieveConnectedPeripherals(withServices: [VENDOR_SERVICE, DEVICE_INFO_SERVICE])
+        let candidates = bleCentral.retrieveConnectedPeripherals(withServices: [VENDOR_SERVICE, DEVICE_INFO_SERVICE, BATTERY_SERVICE])
         guard let target = candidates.first(where: { ($0.name ?? "").contains(TARGET_NAME) }) else {
             print("找不到已連線的 \(TARGET_NAME)"); exit(1)
         }
@@ -48,7 +49,7 @@ final class VendorServiceProbe: NSObject, CBCentralManagerDelegate, CBPeripheral
     }
 
     func centralManager(_ bleCentral: CBCentralManager, didConnect connected: CBPeripheral) {
-        connected.discoverServices([VENDOR_SERVICE, DEVICE_INFO_SERVICE])
+        connected.discoverServices([VENDOR_SERVICE, DEVICE_INFO_SERVICE, BATTERY_SERVICE])
     }
 
     func peripheral(_ device: CBPeripheral, didDiscoverServices error: Error?) {
